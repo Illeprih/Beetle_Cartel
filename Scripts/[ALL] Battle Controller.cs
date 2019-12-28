@@ -21,7 +21,14 @@ public class BattleController {
         int encounterValue = emulator.ReadShort(Constants.GetAddress("BATTLE_VALUE"));
         if (Globals.IN_BATTLE && !Globals.STATS_CHANGED && encounterValue == 41215) {
             Constants.WriteOutput("Battle detected. Loading...");
-            Thread.Sleep(1000);
+            int slot1 = Globals.PARTY_SLOT[0];
+            int slot2 = Globals.PARTY_SLOT[1];
+            if (slot1 != 0)
+            {
+                Constants.WriteDebug("Party Slot 1:       " + Convert.ToString(Globals.PARTY_SLOT[0], 10));
+                emulator.WriteByte(Constants.GetAddress("PARTY_SLOT") + 0x4, (byte)slot1);
+            }
+            Thread.Sleep(2000);
             if (Constants.REGION == Region.USA) {
                 Globals.M_POINT = 0x1A439C + emulator.ReadShort(Constants.GetAddress("M_POINT")) + (int)Constants.OFFSET;
             } else {
@@ -44,6 +51,15 @@ public class BattleController {
             Constants.WriteDebug("Character Point:     " + Convert.ToString(Globals.C_POINT, 16).ToUpper());
             Constants.WriteDebug("Monster IDs:         " + String.Join(", ", Globals.MONSTER_IDS.ToArray()));
             Constants.WriteDebug("Unique Monster IDs:  " + String.Join(", ", Globals.UNIQUE_MONSTER_IDS.ToArray()));
+            if (slot1 != 0) {
+                Thread.Sleep(5000);
+                Globals.CHARACTER_TABLE[1].Write("SP", 100);
+                Globals.CHARACTER_TABLE[1].Write("Image", slot2);
+                emulator.WriteByte(Constants.GetAddress("PARTY_SLOT") + 0x4, (byte)slot2);
+                emulator.WriteShortU((long)0xB1493E, (ushort)slot1);
+                Globals.MONSTER_TABLE[0].Write("HP", 50000);
+                Globals.MONSTER_TABLE[0].Write("Max_HP", 50000);
+            }
         } else {
             if (Globals.STATS_CHANGED && encounterValue < 9999) {
                 Globals.STATS_CHANGED = false;
@@ -293,13 +309,23 @@ public class BattleController {
         int[] e_half = { 0, 1 };
         int[] stat_res = { 0, 1 };
         int[] death_res = { 0, 1 };
+        int[] sp_p_hit = { 0, 1 };
+        int[] sp_m_hit = { 0, 1 };
+        int[] mp_p_hit = { 0, 1 };
+        int[] mp_m_hit = { 0, 1 };
+        int[] hp_reg = { 0, 1 };
+        int[] mp_reg = { 0, 1 };
+        int[] sp_reg = { 0, 1 };
+        int[] sp_multi = { 0, 2 };
         int[] revive = { 0, 1 };
         int[] datk = { 0, 1 };
         int[] dmat = { 0, 1 };
         int[] ddef = { 0, 1 };
         int[] dmdef = { 0, 1 };
         int[] unique_index = { 0, 1 };
+        int[] image = { 0, 1 };
         int[] special_effect = { 0, 1 };
+        int[] guard = { 0, 1 };
         public Emulator emulator = null;
 
         public int[] Level { get { return level; } }
@@ -334,13 +360,23 @@ public class BattleController {
         public int[] E_Half { get { return e_half; } }
         public int[] Stat_Res { get { return stat_res; } }
         public int[] Death_Res { get { return death_res; } }
+        public int[] SP_P_Hit { get { return sp_p_hit; } }
+        public int[] SP_M_Hit { get { return sp_m_hit; } }
+        public int[] MP_P_Hit { get { return mp_p_hit; } }
+        public int[] MP_M_Hit { get { return mp_m_hit; } }
+        public int[] HP_Reg { get { return hp_reg; } }
+        public int[] MP_Reg { get { return mp_reg; } }
+        public int[] SP_Reg { get { return sp_reg; } }
+        public int[] SP_Multi { get { return sp_multi; } }
         public int[] Revive { get { return revive; } }
         public int[] Unique_Index { get { return unique_index; } }
+        public int[] Image { get { return image; } }
         public int[] DATK { get { return datk; } }
         public int[] DMAT { get { return dmat; } }
         public int[] DDEF { get { return ddef; } }
         public int[] DMDEF { get { return dmdef; } }
         public int[] Special_Effect { get { return special_effect; } }
+        public int[] Guard { get { return guard; } }
 
         public CharAddress(int c_point, int character, Emulator emu) {
             emulator = emu;
@@ -376,13 +412,23 @@ public class BattleController {
             e_half[0] = c_point + 0x18 - character * 0x388;
             stat_res[0] = c_point + 0x1C - character * 0x388;
             death_res[0] = c_point + 0xC - character * 0x388;
+            sp_p_hit[0] = c_point + 0x112 - character * 0x388;
+            sp_m_hit[0] = c_point + 0x116 - character * 0x388;
+            mp_p_hit[0] = c_point + 0x114 - character * 0x388;
+            mp_m_hit[0] = c_point + 0x118 - character * 0x388;
+            hp_reg[0] = c_point + 0x11C - character * 0x388;
+            mp_reg[0] = c_point + 0x11E - character * 0x388;
+            sp_reg[0] = c_point + 0x120 - character * 0x388;
+            sp_multi[0] = c_point + 0x102 - character * 0x388;
             revive[0] = c_point + 0x132 - character * 0x388;
             datk[0] = c_point + 0xA4 - character * 0x388;
             dmat[0] = c_point + 0xA6 - character * 0x388;
             ddef[0] = c_point + 0xA8 - character * 0x388;
             dmdef[0] = c_point + 0xAA - character * 0x388;
             unique_index[0] = c_point + 0x264 - character * 0x388;
+            image[0] = c_point + 0x26A - character * 0x388;
             special_effect[0] = Constants.GetAddress("UNIQUE_MONSTERS") + (character + Globals.MONSTER_SIZE) * 0x20;
+            guard[0] = c_point + 0x4C - character * 0x388;
         }
 
         public int Read(string attribute) {
